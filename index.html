@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD STUDIO | Management & Portfolio Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Expense Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
+                    colors: { studio: { 50: '#f5f3ff', 500: '#8b5cf6', 600: '#7c3aed', 950: '#0f0e17' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        .hero-banner {
+            background: linear-gradient(rgba(15, 14, 23, 0.8), rgba(15, 14, 23, 0.95)), url('images/logo.jpg') center/cover no-repeat;
+            min-height: 380px;
+        }
+        @media print {
+            body * { visibility: hidden !important; }
+            #printable-invoice-area, #printable-invoice-area * { visibility: visible !important; }
+            #printable-invoice-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; color: #000 !important; background: #fff !important; padding: 24px !important; }
+            .no-print { display: none !important; }
+        }
+
+        /* AGGRESSIVE NETLIFY BADGE REMOVAL */
+        iframe, [id*="netlify"], [class*="netlify"], a[href*="netlify"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            clip: rect(0 0 0 0) !important;
+            height: 0 !important;
+            width: 0 !important;
+            position: absolute !important;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 font-sans antialiased bg-slate-950 flex flex-col">
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-2">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-2.5 min-w-0 overflow-hidden">
+                    <div class="w-10 h-10 shrink-0 rounded-xl overflow-hidden bg-slate-800 border border-slate-700 shadow-lg shadow-purple-500/25 flex items-center justify-center">
+                        <img src="images/sd logo.jpg" alt="SD Logo" class="w-full h-full object-cover" onerror="this.src='images/logo.jpg'">
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-extrabold text-base sm:text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-purple-400 bg-clip-text text-transparent truncate">SD STUDIO</span>
+                            <span class="text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded-full font-bold">PRO</span>
+                        </div>
+                        <p class="text-[9px] text-slate-400 font-medium tracking-wider uppercase truncate">sdstudio.co.in • Chengalpattu</p>
+                    </div>
+                </div>
+
+                <!-- Admin Switcher -->
+                <div id="admin-switcher-container" class="hidden flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                    <button id="nav-mode-client" onclick="switchMode('client')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white shadow-md transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-users"></i> <span class="hidden sm:inline">Client Portal</span>
+                    </button>
+                    <button id="nav-mode-admin" onclick="triggerAdminAccess()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-lock"></i> <span class="hidden sm:inline">Admin Portal</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- PUBLIC CLIENT WEBSITE VIEW -->
+        <div id="client-view" class="space-y-12 pb-12">
+            
+            <!-- Hero Banner -->
+            <div class="hero-banner rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center text-center space-y-6 border border-slate-800 shadow-2xl">
+                <div class="space-y-3">
+                    <h1 class="text-3xl sm:text-5xl font-black text-white tracking-wide uppercase bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
+                        SD STUDIO
+                    </h1>
+                    
+                    <p class="text-xs sm:text-sm font-semibold text-purple-300 tracking-wider">
+                        One Click Many Day Happy <br/>
+                        <span class="text-xs text-purple-400 font-normal">ஒரே கிளிக்கில் பல நாள் மகிழ்ச்சி</span>
+                    </p>
+                    <p class="text-[11px] text-slate-400">Wedding | Events | Studio | Outdoor Photography & Videography</p>
+                </div>
+
+                <!-- Status Lookup Card / Tracking Album Center -->
+                <div class="bg-slate-950/90 border border-slate-800 rounded-2xl p-5 max-w-md w-full space-y-3">
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider"><i class="fa-solid fa-magnifying-glass text-purple-400 mr-2"></i> Track Album & Booking Status</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="client-search-input" placeholder="Mobile No or Booking ID (e.g. SD-1001)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white text-center">
+                        <button onclick="lookupClientStatus()" class="px-5 py-2.5 rounded-xl bg-purple-600 text-xs font-bold text-white shrink-0">Track</button>
+                    </div>
+                    <div id="client-result-box" class="hidden text-left bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Live Festival & Special Wishes Banner Section -->
+            <section id="live-festival-banner-section" class="space-y-4">
+                <div class="text-center">
+                    <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-star text-amber-400 mr-2"></i> Live Festival & Special Wishes</h2>
+                    <p class="text-xs text-purple-400">Special Announcements & Festival Greetings</p>
+                </div>
+                <div id="client-festival-banner-container" class="max-w-4xl mx-auto rounded-3xl overflow-hidden border border-slate-800 bg-slate-900/90 shadow-2xl p-6 text-center min-h-[320px] flex flex-col items-center justify-center">
+                    <div class="py-12 text-slate-400 text-sm">No active festival banner uploaded currently.</div>
+                </div>
+            </section>
+
+            <!-- Services Offered -->
+            <section id="services" class="space-y-4">
+                <h2 class="text-xl font-bold text-white">Our Services / சேவைகள்</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Wedding & Reception</p><p class="text-[10px] text-slate-400">திருமணம் & வரவேற்பு புகைப்படம் வீடியோ</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Candid Photography & Videography</p><p class="text-[10px] text-slate-400">இயல்பான புகைப்படம் & வீடியோ</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Engagement Shoot</p><p class="text-[10px] text-slate-400">நிச்சயதார்த்தம்</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Puberty Function</p><p class="text-[10px] text-slate-400">மஞ்சள் நீராட்டு விழா</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">House Warming</p><p class="text-[10px] text-slate-400">புதுமனை புகுவிழா</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Naming Ceremony</p><p class="text-[10px] text-slate-400">பெயர் சூட்டு விழா</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Birthday Photography</p><p class="text-[10px] text-slate-400">பிறந்தநாள் விழா</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Baby Shower</p><p class="text-[10px] text-slate-400">சீமந்த விழா</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Outdoor Shoot</p><p class="text-[10px] text-slate-400">அவுட்டோர் போட்டோஷூட்</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Ear Piercing</p><p class="text-[10px] text-slate-400">காதணி விழா</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Frame Work</p><p class="text-[10px] text-slate-400">போட்டோ பிரேம்கள்</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Helicam Drone</p><p class="text-[10px] text-slate-400">டிரோன் வீடியோ</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Led Wall</p><p class="text-[10px] text-slate-400">எல்.ஈ.டி வால்</p></div>
+                    <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl text-xs"><p class="font-bold text-purple-300">Festival & Event</p><p class="text-[10px] text-slate-400">திருவிழா & நிகழ்வுகள்</p></div>
+                </div>
+            </section>
+
+            <!-- Gallery Grid with Auto-Watermark -->
+            <section id="gallery" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <h2 class="text-xl font-bold text-white">Photo Gallery</h2>
+                    <div id="gallery-category-tabs" class="flex flex-wrap gap-1.5 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+                        <button onclick="filterGallery('ALL')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-600 text-white transition">All</button>
+                        <button onclick="filterGallery('Wedding')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Wedding</button>
+                        <button onclick="filterGallery('Engagement')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Engagement</button>
+                        <button onclick="filterGallery('Birthday')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Birthday</button>
+                        <button onclick="filterGallery('Baby Shower')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Baby Shower</button>
+                        <button onclick="filterGallery('Puberty')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Puberty</button>
+                        <button onclick="filterGallery('House Warming')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">House Warming</button>
+                        <button onclick="filterGallery('Naming Ceremony')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Naming Ceremony</button>
+                        <button onclick="filterGallery('Outdoor Shoot')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Outdoor Shoot</button>
+                        <button onclick="filterGallery('Ear Piercing')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Ear Piercing</button>
+                        <button onclick="filterGallery('Frame')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Frame</button>
+                        <button onclick="filterGallery('Helicam')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Helicam</button>
+                        <button onclick="filterGallery('Led Wall')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Led Wall</button>
+                        <button onclick="filterGallery('Event')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Event</button>
+                        <button onclick="filterGallery('Festival')" class="gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">Festival</button>
+                    </div>
+                    <div id="gallery-admin-controls" class="hidden">
+                        <button onclick="openAddPhotoModal()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                            <i class="fa-solid fa-plus"></i> Add Gallery Image
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" id="gallery-container"></div>
+            </section>
+
+            <!-- Google Review Automation Link -->
+            <section id="reviews-section" class="bg-slate-900/60 border border-slate-800 p-6 rounded-3xl text-center space-y-4">
+                <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-star text-amber-400 mr-2"></i> Customer Review & Rating</h2>
+                <p class="text-xs text-slate-300">Your feedback helps us grow! Please take a moment to rate SD Studio on Google.</p>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <a href="https://g.page/r/CZq0tUQLyRerEAI/review" target="_blank" class="px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg">
+                        <i class="fa-brands fa-google text-sm"></i> Leave Google Review & Rating
+                    </a>
+                </div>
+            </section>
+
+            <!-- Booking Section -->
+            <section id="booking" class="max-w-xl mx-auto space-y-4">
+                <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4">
+                    <div class="text-center">
+                        <h2 class="text-xl font-bold text-white">Online Event Booking</h2>
+                        <p class="text-xs text-purple-400">WhatsApp வழியாக நேரடியாக முன்பதிவு செய்ய</p>
+                    </div>
+
+                    <form onsubmit="handleDirectWhatsAppBooking(event)" class="space-y-3">
+                        <input type="text" id="cust-book-name" placeholder="Your Name / உங்கள் பெயர்" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white">
+                        <input type="tel" id="cust-book-phone" placeholder="Mobile Number / மொபைல் எண்" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white">
+                        
+                        <select id="cust-book-service" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white">
+                            <option value="">Select Service / சேவையை தேர்ந்தெடுக்கவும்</option>
+                            <option>Wedding & Reception Photo & Videography(திருமணம் & வரவேற்பு புகைப்படம் வீடியோ)</option>
+                            <option>Candid Photography & Videography(இயல்பான புகைப்படம் & வீடியோ)</option>
+                            <option>Engagement Shoot (நிச்சயதார்த்தம்)</option>
+                            <option>Puberty Function (மஞ்சள் நீராட்டு விழா)</option>
+                            <option>House Warming (புதுமனை புகுவிழா)</option>
+                            <option>Naming Ceremony (பெயர் சூட்டு விழா)</option>
+                            <option>Birthday Photography (பிறந்தநாள் விழா)</option>
+                            <option>Baby Shower (சீமந்த விழா)</option>
+                            <option>Outdoor Shoot (அவுட்டோர் போட்டோஷூட்)</option>
+                            <option>Ear Piercing (காதணி விழா)</option>
+                            <option>Frame Work (போட்டோ பிரேம்)</option>
+                            <option>Helicam Drone Shoot (டிரோன் வீடியோ)</option>
+                            <option>Led Wall (எல்.ஈ.டி வால்)</option>
+                            <option>Event Shoot (நிகழ்வுகள்)</option>
+                            <option>Festival Shoot (திருவிழா)</option>
+                        </select>
+                        
+                        <input type="date" id="cust-book-date" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white">
+                        <textarea id="cust-book-msg" rows="3" placeholder="Additional Details / விவரங்கள்" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white"></textarea>
+                        <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> Book via WhatsApp / முன்பதிவு செய்
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Contact Information & Map -->
+            <section id="contact" class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/60 border border-slate-800 p-6 rounded-3xl">
+                <div class="space-y-3 text-xs text-slate-300">
+                    <h2 class="text-xl font-bold text-white mb-2">Contact Us / தொடர்பு கொள்ள</h2>
+                    <p><i class="fa-solid fa-user text-purple-400 mr-2"></i> <strong>Owner:</strong> SANKARDHAYAL V</p>
+                    <p><i class="fa-solid fa-phone text-purple-400 mr-2"></i> <strong>Phone:</strong> +91 8190092331</p>
+                    <p><i class="fa-brands fa-whatsapp text-purple-400 mr-2"></i> <strong>WhatsApp:</strong> 8190092331</p>
+                    <p><i class="fa-brands fa-instagram text-purple-400 mr-2"></i> <strong>Instagram:</strong> @sd_studio0325</p>
+                    <p><i class="fa-solid fa-envelope text-purple-400 mr-2"></i> <strong>Email:</strong> sdphotography0310@gmail.com</p>
+                    <p><i class="fa-solid fa-globe text-purple-400 mr-2"></i> <strong>Web:</strong> sdstudio.co.in</p>
+                    <p><i class="fa-solid fa-location-dot text-purple-400 mr-2"></i> <strong>Address:</strong> No 41, Vaibhav Garden, Thimmavaram Village, Chengalpattu TN - 603101</p>
+                </div>
+
+                <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 text-center space-y-3">
+                    <h3 class="text-sm font-bold text-amber-400">Scan to Navigate / வழியைப் பெற</h3>
+                    <img src="images/Map logo.png" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://maps.app.goo.gl/9_e4cQD7UjoRmrS1RAvJF6s'" class="w-32 h-32 mx-auto border-4 border-white rounded-xl shadow-lg">
+                    <a href="https://maps.app.goo.gl/9_e4cQD7UjoRmrS1RAvJF6s" target="_blank" class="inline-block text-xs font-bold text-purple-400 hover:text-purple-300">
+                        Open in Google Maps <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <!-- ADMIN PROTECTED PORTAL -->
+        <div id="admin-view" class="hidden space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    </button>
+                    <button onclick="switchTab('new-booking')" id="tab-new-booking" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-calendar-plus"></i> New Booking
+                    </button>
+                    <button onclick="switchTab('manage-bookings')" id="tab-manage-bookings" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-list-check"></i> Bookings List
+                    </button>
+                    <button onclick="switchTab('order-bill')" id="tab-order-bill" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-file-invoice"></i> Order Bill
+                    </button>
+                    <button onclick="switchTab('album-tracker')" id="tab-album-tracker" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-book-open"></i> Album Tracker
+                    </button>
+                    <button onclick="switchTab('expense-tracker')" id="tab-expense-tracker" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-wallet"></i> Expenses
+                    </button>
+                    <button onclick="switchTab('daily-expense')" id="tab-daily-expense" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-receipt"></i> Daily Expense
+                    </button>
+                    <button onclick="switchTab('invoice-gen')" id="tab-invoice-gen" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Invoices
+                    </button>
+                    <button onclick="switchTab('manage-gallery')" id="tab-manage-gallery" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-images"></i> Gallery Manager
+                    </button>
+                    <button onclick="switchTab('google-calendar')" id="tab-google-calendar" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-calendar-days"></i> Google Calendar
+                    </button>
+                    <button onclick="switchTab('admin-settings')" id="tab-admin-settings" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-gear"></i> Tools & Settings
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="refreshAdminData()" title="Refresh Data" class="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                    <button onclick="lockAdminPortal()" title="Back / Lock Admin" class="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </button>
+                </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div id="content-dashboard" class="tab-content space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Bookings</span>
+                        <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-white" id="stat-total-bookings">0</div>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Revenue</span>
+                        <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-emerald-400" id="stat-total-revenue">₹0</div>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Expenses</span>
+                        <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-rose-400" id="stat-total-expenses">₹0</div>
+                    </div>
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 sm:p-5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Net Profit</span>
+                        <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-indigo-400" id="stat-net-profit">₹0</div>
+                    </div>
+                </div>
+
+                <!-- Google Calendar Section in Admin Dashboard -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300"><i class="fa-solid fa-calendar-days text-purple-400 mr-2"></i> Google Calendar & Studio Schedule</h3>
+                        <a href="https://calendar.google.com" target="_blank" class="text-xs text-purple-400 hover:text-purple-300 font-semibold">Open Google Calendar <i class="fa-solid fa-external-link-alt ml-1"></i></a>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                            <span class="text-[10px] text-slate-400 font-bold uppercase">Connected Account</span>
+                            <p class="font-bold text-white mt-0.5">sdphotography0310@gmail.com</p>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase">2-Day Reminder Alerts</span>
+                                <p class="font-bold text-emerald-400 mt-0.5" id="reminder-status-text">Active (Auto Trigger)</p>
+                            </div>
+                            <button onclick="trigger2DayWhatsAppReminders()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow">Send Now</button>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 font-bold uppercase">Cloud Backup</span>
+                                <p class="font-bold text-purple-300 mt-0.5">Google Drive / Firebase</p>
+                            </div>
+                            <button onclick="triggerCloudBackup()" class="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-bold shadow"><i class="fa-solid fa-cloud-arrow-down"></i> Backup</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Upcoming Photography Shoots</h3>
+                            <button onclick="switchTab('manage-bookings')" class="text-xs text-purple-400 hover:text-purple-300 font-semibold">View All</button>
+                        </div>
+                        <div id="dashboard-upcoming-list" class="space-y-3"></div>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Quick Studio Actions</h3>
+                            <div class="space-y-2">
+                                <button onclick="switchTab('new-booking')" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-200 flex items-center justify-between">
+                                    <span><i class="fa-solid fa-plus text-purple-400 mr-2"></i> Add New Client Booking</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                                </button>
+                                <button onclick="switchTab('order-bill')" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-200 flex items-center justify-between">
+                                    <span><i class="fa-solid fa-file-invoice text-emerald-400 mr-2"></i> Open Order Bill System</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                                </button>
+                                <button onclick="switchTab('daily-expense')" class="w-full text-left p-3 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-200 flex items-center justify-between">
+                                    <span><i class="fa-solid fa-receipt text-rose-400 mr-2"></i> Log Daily Expense</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-3 rounded-xl bg-purple-950/40 border border-purple-800/40 text-[11px] text-purple-200 flex items-center gap-3">
+                            <i class="fa-brands fa-whatsapp text-2xl text-purple-400"></i>
+                            <div>WhatsApp messages auto-include website tracking link: <br><span class="font-bold text-white">sdstudio.co.in/?track=ID</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW BOOKING FORM -->
+            <div id="content-new-booking" class="tab-content hidden">
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 max-w-3xl mx-auto">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-800">
+                        <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-white">Create New Event Booking</h2>
+                            <p class="text-xs text-slate-400">Select event type, client info, and advance payment</p>
+                        </div>
+                    </div>
+
+                    <form id="booking-form" onsubmit="handleNewBooking(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Client Full Name *</label>
+                                <input type="text" id="bk-name" required placeholder="e.g. Sankardhayal" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">WhatsApp Mobile No *</label>
+                                <input type="tel" id="bk-phone" required placeholder="e.g. 8190092331" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Event Category *</label>
+                                <select id="bk-event-type" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                                    <option value="Wedding & Reception">Wedding & Reception</option>
+                                    <option value="Engagement">Engagement</option>
+                                    <option value="Birthday">Birthday</option>
+                                    <option value="Baby Shower">Baby Shower</option>
+                                    <option value="Puberty">Puberty</option>
+                                    <option value="House Warming">House Warming</option>
+                                    <option value="Outdoor Shoot">Outdoor Shoot</option>
+                                    <option value="Ear Piercing">Ear Piercing</option>
+                                    <option value="Frame">Frame</option>
+                                    <option value="Helicam">Helicam</option>
+                                    <option value="Led Wall">Led Wall</option>
+                                    <option value="Event">Event</option>
+                                    <option value="Festival">Festival</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Event Date * (Will auto-mark in Google Calendar)</label>
+                                <input type="date" id="bk-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Total Fee (₹) *</label>
+                                <input type="number" id="bk-total" min="0" required placeholder="45000" oninput="calculateBalance()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Advance Paid (₹) *</label>
+                                <input type="number" id="bk-advance" min="0" required placeholder="15000" oninput="calculateBalance()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 mb-1">Balance Due (₹)</label>
+                                <input type="number" id="bk-balance" readonly placeholder="0" class="w-full bg-slate-950 border border-slate-800/60 rounded-xl px-3.5 py-2 text-xs text-amber-400 font-bold focus:outline-none cursor-not-allowed">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Package Details / Notes</label>
+                            <textarea id="bk-notes" rows="2" placeholder="e.g. Photo Album + HD Video + Drone Coverage..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"></textarea>
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-3">
+                            <button type="submit" class="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg transition flex items-center gap-2">
+                                <i class="fa-solid fa-check"></i> Save Booking & Mark in Google Calendar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BOOKINGS LIST -->
+            <div id="content-manage-bookings" class="tab-content hidden space-y-4">
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <input type="text" id="search-booking" oninput="renderBookingsTable()" placeholder="Search Name, Phone, or Booking ID..." class="w-full sm:w-80 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500">
+                    <select id="filter-event" onchange="renderBookingsTable()" class="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+                        <option value="ALL">All Event Categories</option>
+                        <option value="Wedding & Reception">Wedding & Reception</option>
+                        <option value="Engagement">Engagement</option>
+                        <option value="Birthday">Birthday</option>
+                        <option value="Baby Shower">Baby Shower</option>
+                        <option value="Puberty">Puberty</option>
+                        <option value="House Warming">House Warming</option>
+                        <option value="Outdoor Shoot">Outdoor Shoot</option>
+                        <option value="Ear Piercing">Ear Piercing</option>
+                        <option value="Frame">Frame</option>
+                        <option value="Helicam">Helicam</option>
+                        <option value="Led Wall">Led Wall</option>
+                        <option value="Event">Event</option>
+                        <option value="Festival">Festival</option>
+                    </select>
+                </div>
+
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 bg-slate-950 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="p-3.5">Booking ID</th>
+                                    <th class="p-3.5">Client Info</th>
+                                    <th class="p-3.5">Category</th>
+                                    <th class="p-3.5">Date</th>
+                                    <th class="p-3.5">Payment & Refund Track</th>
+                                    <th class="p-3.5">Album Status</th>
+                                    <th class="p-3.5 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bookings-table-body" class="divide-y divide-slate-800/60 text-xs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORDER BILL TAB (NEW) -->
+            <div id="content-order-bill" class="tab-content hidden space-y-6">
+                <div class="max-w-3xl mx-auto bg-white text-slate-900 p-6 rounded-2xl shadow-xl border border-slate-200">
+                    <style>
+                        /* Scoped styling for Order Bill inside Admin portal */
+                        #content-order-bill .container { max-width: 100% !important; background: #fff !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; margin: 0 !important; }
+                        #content-order-bill .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 15px; margin-bottom: 20px; }
+                        #content-order-bill .logo-title { display: flex; align-items: center; gap: 15px; }
+                        #content-order-bill .logo-title img { width: 60px; height: 60px; object-fit: cover; border-radius: 50%; border: 1px solid #ccc; }
+                        #content-order-bill .studio-info h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+                        #content-order-bill .studio-info p { margin: 3px 0; color: #555; font-size: 12px; }
+                        #content-order-bill .contact-info { text-align: right; font-size: 12px; color: #555; }
+                        #content-order-bill .contact-info p { margin: 3px 0; }
+                        #content-order-bill .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+                        #content-order-bill .form-group { flex: 1; }
+                        #content-order-bill label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #333; }
+                        #content-order-bill select, #content-order-bill input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background: #fff; color: #333; }
+                        #content-order-bill button.bill-add-btn { background: #28a745; color: white; padding: 10px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; }
+                        #content-order-bill button.bill-add-btn:hover { background: #218838; }
+                        #content-order-bill table.bill-inner-table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+                        #content-order-bill table.bill-inner-table th, #content-order-bill table.bill-inner-table td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; color: #333; }
+                        #content-order-bill table.bill-inner-table th { background-color: #f8f9fa; color: #333; }
+                        #content-order-bill .delete-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+                        #content-order-bill .delete-btn:hover { background: #c82333; }
+                        #content-order-bill .total-box { margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 5px; border: 1px solid #ddd; }
+                        #content-order-bill .total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #2c3e50; }
+                        #content-order-bill .whatsapp-section { display: flex; gap: 10px; margin-top: 15px; }
+                        #content-order-bill .whatsapp-btn { background: #25D366; text-decoration: none; flex: 1; text-align: center; color: white; padding: 12px; border-radius: 4px; font-weight: bold; font-size: 16px; display: none; }
+                        #content-order-bill .whatsapp-btn:hover { background: #1ebe57; }
+                        #content-order-bill .mode-switch { margin-bottom: 20px; background: #e3f2fd; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; color: #0d47a1; }
+                    </style>
+
+                    <div class="container">
+                        <!-- Header: Studio Logo & Details -->
+                        <div class="header">
+                            <div class="logo-title">
+                                <img src="images/sd logo.jpg" alt="SD Studio Logo" onerror="this.style.display='none'">
+                                <div class="studio-info">
+                                    <h1>SD STUDIO</h1>
+                                    <p>Owner: Sankardhayal V</p>
+                                    <p>Professional Photography & Videography</p>
+                                    <p>Address: No 41, Vaibhav Garden, Thimmavaram Village,</p>
+                                    <p>Kanchipuram High Rd, Chengalpattu, TN 603101</p>
+                                </div>
+                            </div>
+                            <div class="contact-info">
+                                <p>📞 Phone: +91 8190092331</p>
+                                <p>📸 Insta: sd_studio0325</p>
+                                <p>✉️ Gmail: sdphotography0310@gmail.com</p>
+                                <p>🌐 Web: sdstudio.co.in</p>
+                            </div>
+                        </div>
+
+                        <!-- Mode Selector -->
+                        <div class="mode-switch">
+                            <label style="cursor: pointer;">
+                                <input type="radio" name="viewMode" value="office" checked onchange="updateTable()"> <b>Office Copy</b> (Full Details with Prices & Profits)
+                            </label>
+                            <label style="cursor: pointer; margin-left: 20px;">
+                                <input type="radio" name="viewMode" value="customer" onchange="updateTable()"> <b>Customer Copy</b> (Profits Hidden, Final Total Only)
+                            </label>
+                        </div>
+
+                        <!-- Input Form -->
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="categorySelect">Select Pre-defined Item</label>
+                                <select id="categorySelect" onchange="onCategoryChange()">
+                                    <option value="">-- Choose or Type Manually Below --</option>
+                                    <optgroup label="Photography & Videography">
+                                        <option value="Traditional Photo" data-price="2500">Traditional Photo - Rs. 2500</option>
+                                        <option value="Traditional Video" data-price="2500">Traditional Video - Rs. 2500</option>
+                                        <option value="Candid Photo" data-price="5000">Candid Photo - Rs. 5000</option>
+                                        <option value="Candid Video" data-price="7000">Candid Video - Rs. 7000</option>
+                                        <option value="Drone" data-price="7000">Drone - Rs. 7000</option>
+                                        <option value="Outdoor Shoot" data-price="5000">Outdoor Shoot - Rs. 5000</option>
+                                    </optgroup>
+                                    <optgroup label="Video Editing & Equipment">
+                                        <option value="Traditional Video Edit" data-price="1500">Traditional Video Edit - Rs. 1500</option>
+                                        <option value="Candid Video Edit" data-price="5000">Candid Video Edit - Rs. 5000</option>
+                                        <option value="LED Wall" data-price="6000">LED Wall - Rs. 6000</option>
+                                        <option value="Tv" data-price="2000">Tv - Rs. 2000</option>
+                                        <option value="Selfi Both" data-price="12000">Selfi Both - Rs. 12000</option>
+                                    </optgroup>
+                                    <optgroup label="Sheets & Editing">
+                                        <option value="Edit Per Sheet Normal" data-price="60">Edit Per Sheet Normal - Rs. 60</option>
+                                        <option value="Edit Per Sheet Medium" data-price="80">Edit Per Sheet Medium - Rs. 80</option>
+                                        <option value="Edit Per Sheet Premium" data-price="100">Edit Per Sheet Premium - Rs. 100</option>
+                                        <option value="Glossy Sheet Per Sheet Print" data-price="50">Glossy Sheet Print - Rs. 50</option>
+                                        <option value="Matt Sheet Per Sheet Print" data-price="60">Matt Sheet Print - Rs. 60</option>
+                                        <option value="Mixed Sheet Per Sheet Print" data-price="150">Mixed Sheet Print - Rs. 150</option>
+                                    </optgroup>
+                                    <optgroup label="Materials, Albums & Deliverables">
+                                        <option value="Petrol" data-price="200">Petrol - Rs. 200</option>
+                                        <option value="PenDrive" data-price="1500">PenDrive - Rs. 1500</option>
+                                        <option value="3 Combo Frame" data-price="1500">3 Combo Frame - Rs. 1500</option>
+                                        <option value="Acrylic Pad" data-price="1500">Acrylic Pad - Rs. 1500</option>
+                                        <option value="Box album" data-price="2000">Box album - Rs. 2000</option>
+                                        <option value="Album Bag" data-price="300">Album Bag - Rs. 300</option>
+                                        <option value="Pen drive Box" data-price="100">Pen drive Box - Rs. 100</option>
+                                        <option value="Calander" data-price="150">Calander - Rs. 150</option>
+                                        <option value="Premium Album Box" data-price="5000">Premium Album Box - Rs. 5000</option>
+                                    </optgroup>
+                                    <optgroup label="Profit / Custom Slabs">
+                                        <option value="Profit 1" data-price="2000">Profit 1 - Rs. 2000</option>
+                                        <option value="Profit 2" data-price="4000">Profit 2 - Rs. 4000</option>
+                                        <option value="Profit 3" data-price="6000">Profit 3 - Rs. 6000</option>
+                                        <option value="Profit 4" data-price="8000">Profit 4 - Rs. 8000</option>
+                                        <option value="Profit 5" data-price="10000">Profit 5 - Rs. 10000</option>
+                                        <option value="Profit 6" data-price="15000">Profit 6 - Rs. 15000</option>
+                                        <option value="Profit 7" data-price="20000">Profit 7 - Rs. 20000</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="item">Item Name</label>
+                                <input type="text" id="item" placeholder="Type or select from above">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="qty">Quantity</label>
+                                <input type="number" id="qty" value="1" min="1">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="price">Price (Rs.)</label>
+                                <input type="number" id="price" placeholder="0.00">
+                            </div>
+                        </div>
+                        
+                        <button class="bill-add-btn" onclick="addItem()">Add Item to Bill</button>
+
+                        <!-- Table View -->
+                        <table id="billTable" class="bill-inner-table">
+                            <thead>
+                                <tr id="tableHeaderRow">
+                                    <th>Item Name</th>
+                                    <th>Qty</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+
+                        <div class="total-box">
+                            <div class="total-row">
+                                <span>Grand Total:</span>
+                                <span id="grandTotalText">Rs. 0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="whatsapp-section">
+                            <a id="whatsappLink" href="#" class="whatsapp-btn" target="_blank">📲 Send Customer Copy via WhatsApp</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALBUM TRACKER -->
+            <div id="content-album-tracker" class="tab-content hidden space-y-4">
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                    <h2 class="text-base font-bold text-white mb-1">Album Workflow Management</h2>
+                    <p class="text-xs text-slate-400 mb-4">Click stage to update album status and send live client updates</p>
+                    <div id="album-cards-container" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <!-- EXPENSES -->
+            <div id="content-expense-tracker" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-plus-circle text-rose-400"></i> Log Studio Expense
+                        </h3>
+                        <form id="expense-form" onsubmit="handleNewExpense(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Expense Category *</label>
+                                <select id="exp-category" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                                    <option value="Album Printing & Binding">Album Printing & Binding</option>
+                                    <option value="Assistant / Freelance Photographer">Assistant / Freelancers</option>
+                                    <option value="Equipment & Rental">Equipment & Rental</option>
+                                    <option value="Travel & Fuel">Travel & Fuel</option>
+                                    <option value="Studio Maintenance / Rent">Studio Rent / Bills</option>
+                                    <option value="Marketing & Ads">Marketing & Ads</option>
+                                    <option value="Other">Other Expenses</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Description / Particulars *</label>
+                                <input type="text" id="exp-desc" required placeholder="e.g. Printing charges for SD-1001" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Amount Spent (₹) *</label>
+                                <input type="number" id="exp-amount" min="1" required placeholder="3500" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Date *</label>
+                                <input type="date" id="exp-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            </div>
+                            <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white shadow-lg transition">
+                                Add Expense Record
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                            <h3 class="text-sm font-bold text-white mb-3">Studio Expense Category Wise Monthly Chart</h3>
+                            <div class="h-64 relative">
+                                <canvas id="expenseCategoryChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-sm font-bold text-white">Recent Studio Expenses</h3>
+                                <span class="text-xs font-bold text-rose-400" id="expense-total-badge">Total: ₹0</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-800 bg-slate-950 text-[10px] font-bold text-slate-400 uppercase">
+                                            <th class="p-3">Date</th>
+                                            <th class="p-3">Category</th>
+                                            <th class="p-3">Description</th>
+                                            <th class="p-3 text-right">Amount</th>
+                                            <th class="p-3 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expenses-table-body" class="divide-y divide-slate-800/60 text-xs"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DAILY EXPENSE TAB -->
+            <div id="content-daily-expense" class="tab-content hidden space-y-6">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-receipt text-amber-400 mr-2"></i> Daily Expense Manager (தினசரி செலவுகள்)</h3>
+                            <span class="text-xs font-bold text-rose-400 bg-rose-500/10 px-3 py-1 rounded-xl border border-rose-500/20" id="daily-expense-total-badge">Today Total: ₹0</span>
+                        </div>
+                        
+                        <form id="daily-expense-form" onsubmit="handleDailyExpense(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Date *</label>
+                                <input type="date" id="daily-exp-date" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Particulars / Item *</label>
+                                <input type="text" id="daily-exp-item" required placeholder="e.g. Tea, Petrol, Snacks, Current bill..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Amount (₹) *</label>
+                                <input type="number" id="daily-exp-amount" min="1" required placeholder="150" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            </div>
+                            <button type="submit" class="py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 shadow-lg transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i> Add Daily Expense
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-white">All Daily Expenses List</h3>
+                            <div class="flex gap-2">
+                                <input type="date" id="filter-daily-exp-date" onchange="renderDailyExpensesTable()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+                                <button onclick="document.getElementById('filter-daily-exp-date').value=''; renderDailyExpensesTable();" class="px-2.5 py-1.5 bg-slate-800 rounded-xl text-xs text-slate-300">Reset Date</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-800 bg-slate-950 text-[10px] font-bold text-slate-400 uppercase">
+                                        <th class="p-3">Date</th>
+                                        <th class="p-3">Particulars</th>
+                                        <th class="p-3 text-right">Amount</th>
+                                        <th class="p-3 text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="daily-expenses-table-body" class="divide-y divide-slate-800/60 text-xs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INVOICE GENERATOR -->
+            <div id="content-invoice-gen" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <h3 class="text-sm font-bold text-white">Select Booking for Invoice</h3>
+                        <select id="invoice-client-select" onchange="loadBookingIntoInvoice()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                            <option value="">-- Choose Existing Booking --</option>
+                        </select>
+
+                        <div class="pt-4 border-t border-slate-800 space-y-3">
+                            <button onclick="window.print()" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-print"></i> Print / Download PDF Bill
+                            </button>
+                            <button onclick="shareInvoiceWhatsAppDirect()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2">
+                                <i class="fa-brands fa-whatsapp"></i> WhatsApp PDF Invoice Direct Sharing
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2">
+                        <div id="printable-invoice-area" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-slate-200 shadow-2xl space-y-6">
+                            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                                <div>
+                                    <h1 class="text-xl font-black text-white tracking-wide">SD STUDIO</h1>
+                                    <p class="text-[11px] text-slate-400">Photography & Cinematic Films</p>
+                                    <p class="text-[10px] text-slate-400 mt-1">No 41, Vaibhav Garden, Thimmavaram Village, Chengalpattu - 603101</p>
+                                    <p class="text-[10px] text-slate-400">Phone: +91 8190092331 | Email: sdphotography0310@gmail.com</p>
+                                    <p class="text-[10px] text-slate-400">Web: sdstudio.co.in | Insta: @sd_studio0325</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-2.5 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold rounded">OFFICIAL INVOICE</span>
+                                    <p class="text-xs text-slate-400 mt-2">Bill No: <span id="inv-no" class="font-bold text-white">--</span></p>
+                                    <p class="text-xs text-slate-400">Date: <span id="inv-date" class="font-bold text-white">--</span></p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                                <div>
+                                    <span class="text-[10px] uppercase font-bold text-slate-500">Billed To:</span>
+                                    <p id="inv-client-name" class="font-bold text-white text-sm">--</p>
+                                    <p id="inv-client-phone" class="text-slate-400">--</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] uppercase font-bold text-slate-500">Event Info:</span>
+                                    <p id="inv-event-type" class="font-bold text-purple-400">--</p>
+                                    <p id="inv-event-date" class="text-slate-400">--</p>
+                                </div>
+                            </div>
+
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-800 text-slate-400 font-bold uppercase text-[10px]">
+                                        <th class="py-2">Service Particulars</th>
+                                        <th class="py-2 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inv-items-body" class="divide-y divide-slate-800/50"></tbody>
+                            </table>
+
+                            <div class="flex justify-end pt-2 border-t border-slate-800">
+                                <div class="w-56 space-y-1.5 text-xs">
+                                    <div class="flex justify-between text-slate-400">
+                                        <span>Total Package Fee:</span>
+                                        <span id="inv-total" class="font-bold text-white">₹0</span>
+                                    </div>
+                                    <div class="flex justify-between text-slate-400">
+                                        <span>Advance Received:</span>
+                                        <span id="inv-advance" class="font-bold text-emerald-400">₹0</span>
+                                    </div>
+                                    <div class="flex justify-between border-t border-slate-800 pt-1.5 font-bold text-sm">
+                                        <span>Balance Due:</span>
+                                        <span id="inv-balance" class="text-amber-400">₹0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GALLERY MANAGER TAB -->
+            <div id="content-manage-gallery" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-images text-purple-400 mr-2"></i> Gallery Manager (Auto-Watermark SD Studio)</h3>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Event Category *</label>
+                                <select id="gallery-img-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                                    <option value="Wedding">Wedding</option>
+                                    <option value="Engagement">Engagement</option>
+                                    <option value="Birthday">Birthday</option>
+                                    <option value="Baby Shower">Baby Shower</option>
+                                    <option value="Puberty">Puberty</option>
+                                    <option value="House Warming">House Warming</option>
+                                    <option value="Naming Ceremony">Naming Ceremony</option>
+                                    <option value="Outdoor Shoot">Outdoor Shoot</option>
+                                    <option value="Ear Piercing">Ear Piercing</option>
+                                    <option value="Frame">Frame</option>
+                                    <option value="Helicam">Helicam</option>
+                                    <option value="Led Wall">Led Wall</option>
+                                    <option value="Event">Event</option>
+                                    <option value="Festival">Festival</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Image Number *</label>
+                                <input type="number" id="gallery-img-num" placeholder="Image Number" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Select Image File *</label>
+                                <input type="file" id="gallery-file-input" accept="image/*" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+                            </div>
+                            <button onclick="saveGalleryImageFile()" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-lg transition">
+                                Upload with SD Studio Watermark
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 class="text-base font-bold text-white"><i class="fa-solid fa-star text-amber-400 mr-2"></i> Live Festival & Special Wishes Banner</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Upload photo/animation banner for front page center display.</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Banner Title *</label>
+                                <input type="text" id="festival-title-input" placeholder="e.g. Festival Wishes from SD Studio" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Upload Photo / GIF / Animation File *</label>
+                                <input type="file" id="festival-file-input" accept="image/*,video/mp4,.gif" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+                            </div>
+                            <button onclick="saveFestivalBanner()" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 shadow-lg transition">
+                                Publish Festival Banner
+                            </button>
+                            <button onclick="deleteFestivalBanner()" class="w-full py-2 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 text-xs font-bold">
+                                Remove Festival Banner
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GOOGLE CALENDAR TAB -->
+            <div id="content-google-calendar" class="tab-content hidden space-y-6">
+                <div class="max-w-5xl mx-auto space-y-4">
+                    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-xl">
+                        <div>
+                            <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-calendar-days text-purple-400"></i> Google Calendar - Studio Events Schedule
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-1">All event dates booked are automatically highlighted and tracked here.</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="https://calendar.google.com" target="_blank" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow">
+                                <i class="fa-solid fa-external-link-alt"></i> Open Google Calendar
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <h4 class="text-sm font-bold text-white">Marked Event Dates Summary</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-800 bg-slate-950 text-[10px] font-bold text-slate-400 uppercase">
+                                        <th class="p-3">Event Date</th>
+                                        <th class="p-3">Client Name</th>
+                                        <th class="p-3">Event Type</th>
+                                        <th class="p-3">Phone</th>
+                                        <th class="p-3 text-center">Calendar Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="calendar-marked-dates-body" class="divide-y divide-slate-800/60 text-xs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SETTINGS & TOOLS -->
+            <div id="content-admin-settings" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <!-- Custom SMS / WhatsApp Broadcast -->
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <h3 class="text-base font-bold text-white"><i class="fa-brands fa-whatsapp text-emerald-400 mr-2"></i> Custom SMS / WhatsApp Broadcast</h3>
+                        <p class="text-xs text-slate-400">Broadcast promotional offers or greetings to all saved clients.</p>
+                        <textarea id="broadcast-msg" rows="4" placeholder="Type your broadcast message here..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white"></textarea>
+                        <button onclick="sendWhatsAppBroadcast()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+                            Send Broadcast via WhatsApp
+                        </button>
+                    </div>
+
+                    <!-- GOOGLE DRIVE BACKUP & TOOLS -->
+                    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-4">
+                        <h3 class="text-base font-bold text-white"><i class="fa-brands fa-google-drive text-blue-400 mr-2"></i> Google Drive & Cloud Backup</h3>
+                        <p class="text-xs text-slate-400">Download and save your complete studio backup directly for Google Drive storage.</p>
+                        <div class="space-y-3">
+                            <button onclick="triggerGoogleDriveBackup()" class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg">
+                                <i class="fa-brands fa-google-drive"></i> Google Drive Backup Download (.JSON)
+                            </button>
+                            <button onclick="triggerCloudBackup()" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-down"></i> Local JSON Backup Download
+                            </button>
+                            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
+                                <span class="font-bold text-slate-300">Connected Drive Account:</span>
+                                <p class="text-[11px] text-blue-400 font-bold">sdphotography0310@gmail.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Admin PIN Prompt Modal -->
+    <div id="admin-pin-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div class="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-white">Admin Security Access</h3>
+                <p class="text-xs text-slate-400 mt-1">Enter Admin PIN to manage studio bookings</p>
+            </div>
+            <input type="password" id="admin-pin-input" placeholder="Enter PIN" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-center text-sm font-bold text-white tracking-widest focus:outline-none focus:border-purple-500">
+            <div class="flex gap-2">
+                <button onclick="closeAdminPinModal()" class="w-1/2 py-2.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300">Cancel</button>
+                <button onclick="verifyAdminPin()" class="w-1/2 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Update Gallery Image Modal -->
+    <div id="add-photo-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-white">Manage Gallery Image</h3>
+                <button onclick="closeAddPhotoModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">Select category, number and pick file from memory.</p>
+            <select id="modal-gallery-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white">
+                <option value="Wedding">Wedding</option>
+                <option value="Engagement">Engagement</option>
+                <option value="Birthday">Birthday</option>
+                <option value="Baby Shower">Baby Shower</option>
+                <option value="Puberty">Puberty</option>
+                <option value="House Warming">House Warming</option>
+                <option value="Naming Ceremony">Naming Ceremony</option>
+                <option value="Outdoor Shoot">Outdoor Shoot</option>
+                <option value="Ear Piercing">Ear Piercing</option>
+                <option value="Frame">Frame</option>
+                <option value="Helicam">Helicam</option>
+                <option value="Led Wall">Led Wall</option>
+                <option value="Event">Event</option>
+                <option value="Festival">Festival</option>
+            </select>
+            <input type="number" id="modal-gallery-img-num" placeholder="Image Number (e.g. 1)" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white">
+            <input type="file" id="modal-gallery-file-input" accept="image/*" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-300">
+            <div class="flex gap-2 pt-2">
+                <button onclick="saveModalGalleryImageFile()" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white">Upload with Watermark</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Booking Modal -->
+    <div id="edit-booking-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-white">Re-Edit Booking & Amount</h3>
+                <button onclick="closeEditBookingModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <input type="hidden" id="edit-bk-id">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Total Package Fee (₹)</label>
+                    <input type="number" id="edit-bk-total" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Advance Paid / Refund (₹)</label>
+                    <input type="number" id="edit-bk-advance" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Album Status</label>
+                    <select id="edit-bk-status" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white">
+                        <option value="Selection Pending">Selection Pending</option>
+                        <option value="Designing">Designing</option>
+                        <option value="Client Approval">Client Approval</option>
+                        <option value="Printing & Binding">Printing & Binding</option>
+                        <option value="Ready for Delivery">Ready for Delivery</option>
+                        <option value="Delivered">Delivered</option>
+                    </select>
+                </div>
+                <button onclick="saveEditedBooking()" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white">Update Booking Details</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-purple-500/40 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-purple-400 text-base"></i>
+        <span id="toast-msg" class="font-medium">Notification message</span>
+    </div>
+
+    <!-- FLOATING LEFT SIDE BUTTONS: WHATSAPP, INSTAGRAM, CALL -->
+    <div class="fixed bottom-6 left-6 z-50 flex flex-col gap-3">
+        <!-- WhatsApp Floating Button -->
+        <a href="https://wa.me/918190092331" target="_blank" title="Chat on WhatsApp" class="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white flex items-center justify-center shadow-2xl text-xl transition transform hover:scale-110">
+            <i class="fa-brands fa-whatsapp"></i>
+        </a>
+        <!-- Instagram Floating Button -->
+        <a href="https://instagram.com/sd_studio0325" target="_blank" title="Follow on Instagram" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 hover:opacity-95 text-white flex items-center justify-center shadow-2xl text-xl transition transform hover:scale-110">
+            <i class="fa-brands fa-instagram"></i>
+        </a>
+        <!-- Direct Call Floating Button -->
+        <a href="tel:918190092331" title="Call SD Studio" class="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-2xl text-lg transition transform hover:scale-110">
+            <i class="fa-solid fa-phone"></i>
+        </a>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+        © 2026 SD STUDIO • Chengalpattu
+    </footer>
+
+    <script>
+        const STUDIO = {
+            name: "SD Studio",
+            phone: "8190092331",
+            address: "No 41, Vaibhav Garden, Thimmavaram Village, Kanchipuram High Rd, Chengalpattu, TN 603101",
+            domain: "sdstudio.co.in",
+            adminPin: "0325"
+        }; 
+
+        const GOOGLE_SHEET_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL";
+        const GOOGLE_REVIEW_URL = "https://g.page/r/CZq0tUQLyRerEAI/review";
+
+        const firebaseConfig = {
+            databaseURL: "https://sd-studio-69542-default-rtdb.firebaseio.com"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let bookings = [];
+        let expenses = [];
+        let dailyExpenses = [];
+        let galleryImages = [];
+        let festivalBanner = null;
+        let isAdminUnlocked = false;
+        let currentGalleryFilter = 'ALL';
+        let expenseChartInstance = null;
+
+        // Order Bill Cart logic
+        let cart = [];
+
+        function onCategoryChange() {
+            const select = document.getElementById('categorySelect');
+            const selectedOption = select.options[select.selectedIndex];
+            if (select.value) {
+                document.getElementById('item').value = select.value;
+                document.getElementById('price').value = selectedOption.getAttribute('data-price');
+            }
+        }
+
+        function addItem() {
+            const item = document.getElementById('item').value.trim();
+            const qty = parseInt(document.getElementById('qty').value);
+            const price = parseFloat(document.getElementById('price').value);
+
+            if (!item || isNaN(qty) || isNaN(price)) {
+                alert("Please enter valid item name, quantity, and price!");
+                return;
+            }
+
+            const total = qty * price;
+            cart.push({ item, qty, price, total });
+
+            updateTable();
+            
+            // Reset inputs
+            document.getElementById('categorySelect').value = '';
+            document.getElementById('item').value = '';
+            document.getElementById('qty').value = '1';
+            document.getElementById('price').value = '';
+        }
+
+        function removeItem(index) {
+            cart.splice(index, 1);
+            updateTable();
+        }
+
+        function updateTable() {
+            const modeInput = document.querySelector('input[name="viewMode"]:checked');
+            const mode = modeInput ? modeInput.value : 'office';
+            const tbody = document.querySelector('#billTable tbody');
+            const headerRow = document.querySelector('#tableHeaderRow');
+            if(!tbody || !headerRow) return;
+            tbody.innerHTML = '';
+            let grandTotal = 0;
+
+            // Adjust table header based on mode
+            if (mode === 'office') {
+                headerRow.innerHTML = `<th>Item Name</th><th>Qty</th><th>Price</th><th>Total</th><th>Action</th>`;
+            } else {
+                headerRow.innerHTML = `<th>Item Name</th><th>Qty</th><th>Action</th>`;
+            }
+
+            let customerMessage = "Hello! SD Studio Order Details:\n\n";
+
+            cart.forEach((cartItem, index) => {
+                grandTotal += cartItem.total;
+                
+                // Check if item is a profit item
+                const isProfit = cartItem.item.toLowerCase().includes('profit');
+
+                if (mode === 'office') {
+                    customerMessage += `- ${cartItem.item} (${cartItem.qty}x) = Rs. ${cartItem.total}\n`;
+                    tbody.innerHTML += `<tr>
+                        <td>${cartItem.item}</td>
+                        <td>${cartItem.qty}</td>
+                        <td>Rs. ${cartItem.price}</td>
+                        <td>Rs. ${cartItem.total}</td>
+                        <td><button class="delete-btn" onclick="removeItem(${index})">Delete</button></td>
+                    </tr>`;
+                } else {
+                    // Customer Copy: Skip showing profit items in table and WhatsApp message text
+                    if (!isProfit) {
+                        customerMessage += `- ${cartItem.item} (${cartItem.qty}x)\n`;
+                        tbody.innerHTML += `<tr>
+                            <td>${cartItem.item}</td>
+                            <td>${cartItem.qty}</td>
+                            <td><button class="delete-btn" onclick="removeItem(${index})">Delete</button></td>
+                        </tr>`;
+                    }
+                }
+            });
+
+            const grandTotalText = document.getElementById('grandTotalText');
+            if(grandTotalText) grandTotalText.innerText = `Rs. ${grandTotal.toFixed(2)}`;
+            
+            customerMessage += `\n*Your Event Total Amount: Rs. ${grandTotal.toFixed(2)}*\n\nThank you for choosing SD Studio!\n📞 +91 8190092331\n🌐 sdstudio.co.in`;
+
+            // WhatsApp setup
+            const encodedMessage = encodeURIComponent(customerMessage);
+            const waLink = document.getElementById('whatsappLink');
+            if(waLink) {
+                waLink.href = `https://wa.me/?text=${encodedMessage}`;
+                waLink.style.display = cart.length > 0 ? 'block' : 'none';
+            }
+        }
+
+        window.onload = function() {
+            document.getElementById('bk-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('daily-exp-date').value = new Date().toISOString().split('T')[0];
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const isAdminParam = urlParams.get('mode') === 'admin';
+
+            if (isAdminParam) {
+                document.getElementById('admin-switcher-container').classList.remove('hidden');
+                isAdminUnlocked = true;
+                switchMode('admin');
+            }
+
+            const trackId = urlParams.get('track');
+            if (trackId) {
+                document.getElementById('client-search-input').value = trackId;
+                lookupClientStatus();
+            }
+
+            db.ref('sd_bookings').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    bookings = snapshot.val();
+                } else {
+                    bookings = [];
+                }
+                updateDashboardStats();
+                renderBookingsTable();
+                renderAlbumPipeline();
+                populateInvoiceClientSelect();
+                renderGoogleCalendarTable();
+                check2DayReminders();
+            });
+
+            db.ref('sd_expenses').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    expenses = snapshot.val();
+                } else {
+                    expenses = [];
+                }
+                updateDashboardStats();
+                renderExpensesTable();
+                renderExpenseCategoryChart();
+            });
+
+            db.ref('sd_daily_expenses').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    dailyExpenses = snapshot.val();
+                } else {
+                    dailyExpenses = [];
+                }
+                renderDailyExpensesTable();
+            });
+
+            db.ref('sd_festival_banner').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    festivalBanner = snapshot.val();
+                } else {
+                    festivalBanner = null;
+                }
+                renderClientFestivalBanner();
+            });
+
+            db.ref('sd_gallery').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    galleryImages = snapshot.val();
+                } else {
+                    galleryImages = [];
+                    let categories = [
+                        { name: "Wedding", prefix: "wed", count: 7 },
+                        { name: "Engagement", prefix: "eng", count: 6 },
+                        { name: "Birthday", prefix: "bd", count: 6 },
+                        { name: "Baby Shower", prefix: "bs", count: 5 },
+                        { name: "Puberty", prefix: "py", count: 3 },
+                        { name: "House Warming", prefix: "hw", count: 3 },
+                        { name: "Naming Ceremony", prefix: "nc", count: 2 },
+                        { name: "Outdoor Shoot", prefix: "os", count: 2 },
+                        { name: "Ear Piercing", prefix: "ep", count: 2 },
+                        { name: "Frame", prefix: "f", count: 2 },
+                        { name: "Helicam", prefix: "hc", count: 2 },
+                        { name: "Led Wall", prefix: "lw", count: 2 },
+                        { name: "Event", prefix: "e", count: 2 },
+                        { name: "Festival", prefix: "ft", count: 1 }
+                    ];
+
+                    let globalId = 1;
+                    categories.forEach(cat => {
+                        for(let i = 1; i <= cat.count; i++) {
+                            galleryImages.push({ 
+                                id: globalId++, 
+                                category: cat.name, 
+                                url: `images/${cat.prefix}${i}.jpg` 
+                            });
+                        }
+                    });
+                }
+                renderGallery();
+            });
+        };
+
+        function saveState() {
+            db.ref('sd_bookings').set(bookings);
+            db.ref('sd_expenses').set(expenses);
+            db.ref('sd_daily_expenses').set(dailyExpenses);
+            db.ref('sd_gallery').set(galleryImages);
+            db.ref('sd_festival_banner').set(festivalBanner);
+        }
+
+        function applyAutoWatermark(imageSrc, callback) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                ctx.save();
+                ctx.font = `bold ${Math.max(24, img.width / 25)}px sans-serif`;
+                ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+                ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+                ctx.shadowBlur = 6;
+                ctx.textAlign = "right";
+                ctx.textBaseline = "bottom";
+                ctx.fillText("© SD STUDIO CHENGALPATTU", img.width - 30, img.height - 30);
+                ctx.restore();
+
+                callback(canvas.toDataURL('image/jpeg', 0.9));
+            };
+            img.onerror = function() {
+                callback(imageSrc);
+            };
+            img.src = imageSrc;
+        }
+
+        function triggerAdminAccess() {
+            if (isAdminUnlocked) {
+                switchMode('admin');
+            } else {
+                document.getElementById('admin-pin-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeAdminPinModal() {
+            document.getElementById('admin-pin-modal').classList.add('hidden');
+        }
+
+        function verifyAdminPin() {
+            const input = document.getElementById('admin-pin-input').value;
+            if (input === STUDIO.adminPin) {
+                isAdminUnlocked = true;
+                closeAdminPinModal();
+                switchMode('admin');
+                showToast("Admin portal unlocked!");
+            } else {
+                alert("Incorrect Admin PIN!");
+            }
+        }
+
+        function lockAdminPortal() {
+            isAdminUnlocked = false;
+            switchMode('client');
+            showToast("Admin portal locked.");
+        }
+
+        function refreshAdminData() {
+            window.location.reload();
+        }
+
+        function switchMode(mode) {
+            const adminView = document.getElementById('admin-view');
+            const clientView = document.getElementById('client-view');
+            const navAdmin = document.getElementById('nav-mode-admin');
+            const navClient = document.getElementById('nav-mode-client');
+            const galleryAdminControls = document.getElementById('gallery-admin-controls');
+
+            if (mode === 'admin') {
+                adminView.classList.remove('hidden');
+                clientView.classList.add('hidden');
+                navAdmin.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white shadow-md transition flex items-center gap-1.5";
+                navClient.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+                
+                if(galleryAdminControls) {
+                    galleryAdminControls.classList.remove('hidden');
+                    galleryAdminControls.style.display = 'block';
+                }
+                
+                updateDashboardStats();
+                renderBookingsTable();
+                renderAlbumPipeline();
+                renderExpensesTable();
+                renderDailyExpensesTable();
+                renderExpenseCategoryChart();
+                renderGoogleCalendarTable();
+                populateInvoiceClientSelect();
+                renderGallery();
+            } else {
+                adminView.classList.add('hidden');
+                clientView.classList.remove('hidden');
+                navClient.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white shadow-md transition flex items-center gap-1.5";
+                navAdmin.className = "px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition flex items-center gap-1.5";
+                
+                if(galleryAdminControls) {
+                    galleryAdminControls.classList.add('hidden');
+                    galleryAdminControls.style.display = 'none';
+                }
+                renderGallery();
+                renderClientFestivalBanner();
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'bg-purple-600', 'text-white'));
+
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) activeBtn.classList.add('active', 'bg-purple-600', 'text-white');
+            if(tabId === 'expense-tracker') renderExpenseCategoryChart();
+            if(tabId === 'google-calendar') renderGoogleCalendarTable();
+            if(tabId === 'order-bill') updateTable();
+        }
+
+        function filterGallery(category) {
+            currentGalleryFilter = category;
+            document.querySelectorAll('.gal-tab').forEach(btn => {
+                if(btn.innerText.includes(category) || (category === 'ALL' && btn.innerText === 'All')) {
+                    btn.className = "gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-600 text-white transition";
+                } else {
+                    btn.className = "gal-tab px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition";
+                }
+            });
+            renderGallery();
+        }
+
+        function renderGallery() {
+            const container = document.getElementById('gallery-container');
+            if(!container) return;
+
+            const filteredImages = galleryImages.filter(imgObj => {
+                if(currentGalleryFilter === 'ALL') return true;
+                return imgObj.category === currentGalleryFilter;
+            });
+
+            if(filteredImages.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-8 text-xs text-slate-500">No photos found in this category.</div>`;
+                return;
+            }
+
+            container.innerHTML = filteredImages.map((imgObj) => `
+                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden aspect-square relative group">
+                    <img src="${imgObj.url}" onerror="this.src='https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400'" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+                    <span class="absolute top-2 left-2 bg-slate-950/80 text-[9px] font-bold text-purple-300 px-2 py-0.5 rounded-full border border-slate-800">${imgObj.category || 'Wedding'}</span>
+                    <span class="absolute bottom-2 right-2 bg-slate-950/80 text-[8px] font-bold text-slate-400 px-1.5 py-0.5 rounded border border-slate-800">SD Studio</span>
+                    ${isAdminUnlocked ? `
+                        <div class="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                            <button onclick="deleteGalleryImage(${imgObj.id})" class="p-2 bg-rose-600 text-white rounded-lg text-xs font-bold shadow" title="Delete Image"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderClientFestivalBanner() {
+            const container = document.getElementById('client-festival-banner-container');
+            if(!container) return;
+
+            if(!festivalBanner) {
+                container.innerHTML = `<div class="py-12 text-slate-400 text-sm">No active festival banner uploaded currently.</div>`;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="space-y-3 w-full">
+                    <h3 class="text-base sm:text-lg font-extrabold text-amber-400">${festivalBanner.title}</h3>
+                    <div class="rounded-2xl overflow-hidden max-h-[450px] mx-auto border border-slate-800 flex items-center justify-center bg-slate-950 shadow-inner">
+                        <img src="${festivalBanner.url}" class="max-h-[400px] w-auto object-contain">
+                    </div>
+                </div>
+            `;
+        }
+
+        function openAddPhotoModal() {
+            document.getElementById('add-photo-modal').classList.remove('hidden');
+        }
+
+        function closeAddPhotoModal() {
+            document.getElementById('add-photo-modal').classList.add('hidden');
+        }
+
+        function processFileAndSave(category, num, fileInputId, modalCloseCallback) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!num || !fileInput.files || fileInput.files.length === 0) {
+                alert("Please enter image number and choose a file from your device!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const originalBase64 = e.target.result;
+                applyAutoWatermark(originalBase64, function(watermarkedBase64) {
+                    let prefixes = {
+                        "Wedding": "wed", "Engagement": "eng", "Birthday": "bd", "Baby Shower": "bs",
+                        "Puberty": "py", "House Warming": "hw", "Naming Ceremony": "nc", "Outdoor Shoot": "os",
+                        "Ear Piercing": "ep", "Frame": "f", "Helicam": "hc", "Led Wall": "lw", "Event": "e", "Festival": "ft"
+                    };
+                    let prefix = prefixes[category] || "img";
+                    let existingIndex = galleryImages.findIndex(i => i.category === category && i.id === num);
+                    if(existingIndex >= 0) {
+                        galleryImages[existingIndex].url = watermarkedBase64;
+                    } else {
+                        galleryImages.push({ id: num, category: category, url: watermarkedBase64 });
+                        galleryImages.sort((a,b) => a.id - b.id);
+                    }
+
+                    saveState();
+                    if(modalCloseCallback) modalCloseCallback();
+                    showToast(`Gallery image uploaded with SD Studio watermark!`);
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function saveGalleryImageFile() {
+            const category = document.getElementById('gallery-img-category').value;
+            const num = parseInt(document.getElementById('gallery-img-num').value);
+            processFileAndSave(category, num, 'gallery-file-input', () => {
+                document.getElementById('gallery-img-num').value = '';
+                document.getElementById('gallery-file-input').value = '';
+            });
+        }
+
+        function saveModalGalleryImageFile() {
+            const category = document.getElementById('modal-gallery-category').value;
+            const num = parseInt(document.getElementById('modal-gallery-img-num').value);
+            processFileAndSave(category, num, 'modal-gallery-file-input', () => {
+                closeAddPhotoModal();
+            });
+        }
+
+        function saveFestivalBanner() {
+            const title = document.getElementById('festival-title-input').value;
+            const fileInput = document.getElementById('festival-file-input');
+            if(!title || !fileInput.files || fileInput.files.length === 0) {
+                alert("Please enter festival title and select a photo/animation file!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                festivalBanner = { title: title, url: e.target.result };
+                saveState();
+                showToast("Live festival & wish banner published successfully!");
+                document.getElementById('festival-title-input').value = '';
+                document.getElementById('festival-file-input').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function deleteFestivalBanner() {
+            if(confirm("Remove live festival banner?")) {
+                festivalBanner = null;
+                saveState();
+                showToast("Festival banner removed.");
+            }
+        }
+
+        function deleteGalleryImage(id) {
+            if(confirm("Are you sure you want to delete this photo from the gallery?")) {
+                galleryImages = galleryImages.filter(img => img.id !== id);
+                saveState();
+                showToast("Gallery image removed.");
+            }
+        }
+
+        function calculateBalance() {
+            const total = parseFloat(document.getElementById('bk-total').value) || 0;
+            const advance = parseFloat(document.getElementById('bk-advance').value) || 0;
+            document.getElementById('bk-balance').value = Math.max(0, total - advance);
+        }
+
+        function handleDirectWhatsAppBooking(e) {
+            e.preventDefault();
+            const name = document.getElementById('cust-book-name').value;
+            const phoneInput = document.getElementById('cust-book-phone').value;
+            const service = document.getElementById('cust-book-service').value;
+            const date = document.getElementById('cust-book-date').value;
+            const msg = document.getElementById('cust-book-msg').value;
+
+            const text = `Hi SD Studio! I want to book an event.\nName: ${name}\nService: ${service}\nDate: ${date}\nNote: ${msg}`;
+            window.open(`https://wa.me/918190092331?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function handleNewBooking(e) {
+            e.preventDefault();
+            const newId = `SD-${1000 + bookings.length + 1}`;
+            const total = parseFloat(document.getElementById('bk-total').value) || 0;
+            const advance = parseFloat(document.getElementById('bk-advance').value) || 0;
+
+            const eventDate = document.getElementById('bk-date').value;
+            const clientName = document.getElementById('bk-name').value;
+            const eventType = document.getElementById('bk-event-type').value;
+
+            const newBk = {
+                id: newId,
+                name: clientName,
+                phone: document.getElementById('bk-phone').value,
+                eventType: eventType,
+                date: eventDate,
+                total,
+                advance,
+                balance: Math.max(0, total - advance),
+                refund: 0,
+                notes: document.getElementById('bk-notes').value,
+                albumStatus: "Selection Pending"
+            };
+
+            bookings.unshift(newBk);
+            saveState();
+
+            if (GOOGLE_SHEET_URL && GOOGLE_SHEET_URL !== "YOUR_APPS_SCRIPT_WEB_APP_URL") {
+                fetch(GOOGLE_SHEET_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newBk)
+                }).catch(err => console.log('Google Sheet Sync Error:', err));
+            }
+
+            document.getElementById('booking-form').reset();
+            document.getElementById('bk-date').value = new Date().toISOString().split('T')[0];
+
+            showToast(`Booking ${newId} saved & marked in Google Calendar!`);
+            
+            const calDate = eventDate.replace(/-/g, '');
+            const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventType + ' - ' + clientName)}&dates=${calDate}/${calDate}&details=${encodeURIComponent('Booking ID: ' + newId + ' | Phone: ' + newBk.phone)}&location=${encodeURIComponent(STUDIO.address)}&add=sdphotography0310@gmail.com`;
+
+            if (confirm(`Send WhatsApp confirmation to ${newBk.name} and open Google Calendar to mark event date?`)) {
+                window.open(gCalUrl, '_blank');
+                sendWhatsAppBookingConfirm(newBk);
+            }
+            switchTab('manage-bookings');
+        }
+
+        function handleNewExpense(e) {
+            e.preventDefault();
+            const exp = {
+                id: `EXP-${100 + expenses.length + 1}`,
+                category: document.getElementById('exp-category').value,
+                desc: document.getElementById('exp-desc').value,
+                amount: parseFloat(document.getElementById('exp-amount').value) || 0,
+                date: document.getElementById('exp-date').value
+            };
+
+            expenses.unshift(exp);
+            saveState();
+            document.getElementById('expense-form').reset();
+            document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+            renderExpenseCategoryChart();
+
+            showToast("Expense logged successfully!");
+        }
+
+        function handleDailyExpense(e) {
+            e.preventDefault();
+            const dailyExp = {
+                id: `DEXP-${Date.now()}`,
+                date: document.getElementById('daily-exp-date').value,
+                item: document.getElementById('daily-exp-item').value,
+                amount: parseFloat(document.getElementById('daily-exp-amount').value) || 0
+            };
+
+            dailyExpenses.unshift(dailyExp);
+            saveState();
+            document.getElementById('daily-exp-item').value = '';
+            document.getElementById('daily-exp-amount').value = '';
+            document.getElementById('daily-exp-date').value = new Date().toISOString().split('T')[0];
+            renderDailyExpensesTable();
+            showToast("Daily expense added successfully!");
+        }
+
+        function deleteDailyExpense(id) {
+            if(confirm("Delete this daily expense record?")) {
+                dailyExpenses = dailyExpenses.filter(d => d.id !== id);
+                saveState();
+                renderDailyExpensesTable();
+                showToast("Daily expense deleted.");
+            }
+        }
+
+        function renderDailyExpensesTable() {
+            const tbody = document.getElementById('daily-expenses-table-body');
+            const filterDate = document.getElementById('filter-daily-exp-date').value;
+            if(!tbody) return;
+
+            const filtered = dailyExpenses.filter(d => {
+                if(!filterDate) return true;
+                return d.date === filterDate;
+            });
+
+            const total = filtered.reduce((sum, d) => sum + d.amount, 0);
+            document.getElementById('daily-expense-total-badge').innerText = `Total: ₹${total.toLocaleString('en-IN')}`;
+
+            tbody.innerHTML = filtered.map(d => `
+                <tr class="hover:bg-slate-800/30 border-b border-slate-800/40">
+                    <td class="p-3 text-slate-400">${d.date}</td>
+                    <td class="p-3 font-semibold text-white">${d.item}</td>
+                    <td class="p-3 text-right font-bold text-amber-400">₹${d.amount.toLocaleString('en-IN')}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteDailyExpense('${d.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function deleteExpense(id) {
+            if (confirm("Delete this expense record?")) {
+                expenses = expenses.filter(e => e.id !== id);
+                saveState();
+                renderExpenseCategoryChart();
+                showToast("Expense removed.");
+            }
+        }
+
+        function updateDashboardStats() {
+            const totalRev = bookings.reduce((sum, b) => sum + b.total, 0);
+            const totalExp = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+            document.getElementById('stat-total-bookings').innerText = bookings.length;
+            document.getElementById('stat-total-revenue').innerText = `₹${totalRev.toLocaleString('en-IN')}`;
+            document.getElementById('stat-total-expenses').innerText = `₹${totalExp.toLocaleString('en-IN')}`;
+            document.getElementById('stat-net-profit').innerText = `₹${(totalRev - totalExp).toLocaleString('en-IN')}`;
+
+            const upcomingList = document.getElementById('dashboard-upcoming-list');
+            const sorted = [...bookings].sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
+
+            upcomingList.innerHTML = sorted.map(b => `
+                <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-white">${b.name} (${b.id})</p>
+                        <p class="text-[10px] text-slate-400">${b.eventType} • <span class="text-purple-300">${b.date}</span></p>
+                    </div>
+                    <span class="text-xs font-bold text-emerald-400">₹${b.total.toLocaleString('en-IN')}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderBookingsTable() {
+            const search = document.getElementById('search-booking').value.toLowerCase();
+            const eventFilter = document.getElementById('filter-event').value;
+            const tbody = document.getElementById('bookings-table-body');
+            if(!tbody) return;
+
+            const filtered = bookings.filter(b => {
+                const matchSearch = b.name.toLowerCase().includes(search) || b.phone.includes(search) || b.id.toLowerCase().includes(search);
+                const matchEvent = eventFilter === 'ALL' || b.eventType === eventFilter;
+                return matchSearch && matchEvent;
+            });
+
+            tbody.innerHTML = filtered.map(b => `
+                <tr class="hover:bg-slate-800/30 border-b border-slate-800/40">
+                    <td class="p-3.5 font-bold text-purple-400">${b.id}</td>
+                    <td class="p-3.5">
+                        <p class="font-bold text-white">${b.name}</p>
+                        <p class="text-[10px] text-slate-400">${b.phone}</p>
+                    </td>
+                    <td class="p-3.5 text-slate-300">${b.eventType}</td>
+                    <td class="p-3.5 text-slate-300">${b.date}</td>
+                    <td class="p-3.5">
+                        <p class="font-bold text-slate-200">Total: ₹${b.total.toLocaleString('en-IN')}</p>
+                        <p class="text-[10px] ${b.balance === 0 ? 'text-emerald-400' : 'text-amber-400'}">Bal: ₹${b.balance.toLocaleString('en-IN')}</p>
+                        ${b.refund > 0 ? `<p class="text-[10px] text-rose-400 font-bold">Refund: ₹${b.refund}</p>` : ''}
+                    </td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">${b.albumStatus}</span>
+                    </td>
+                    <td class="p-3.5 text-center">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="openEditBookingModal('${b.id}')" title="Re-Edit Amount & Details" class="p-1.5 rounded bg-purple-600/20 text-purple-300 hover:bg-purple-600 hover:text-white"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="sendWhatsAppBookingConfirmDirect('${b.id}')" title="Send WhatsApp Message" class="p-1.5 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white"><i class="fa-brands fa-whatsapp"></i></button>
+                            <button onclick="deleteBooking('${b.id}')" title="Delete" class="p-1.5 rounded bg-rose-600/20 text-rose-400 hover:bg-rose-600 hover:text-white"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderExpensesTable() {
+            const tbody = document.getElementById('expenses-table-body');
+            if(!tbody) return;
+            const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+            document.getElementById('expense-total-badge').innerText = `Total: ₹${total.toLocaleString('en-IN')}`;
+
+            tbody.innerHTML = expenses.map(e => `
+                <tr class="hover:bg-slate-800/30 border-b border-slate-800/40">
+                    <td class="p-3 text-slate-400">${e.date}</td>
+                    <td class="p-3 font-semibold text-purple-300">${e.category}</td>
+                    <td class="p-3 text-slate-200">${e.desc}</td>
+                    <td class="p-3 text-right font-bold text-rose-400">₹${e.amount.toLocaleString('en-IN')}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteExpense('${e.id}')" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderGoogleCalendarTable() {
+            const tbody = document.getElementById('calendar-marked-dates-body');
+            if(!tbody) return;
+
+            const sorted = [...bookings].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+            tbody.innerHTML = sorted.map(b => {
+                const calDate = b.date ? b.date.replace(/-/g, '') : '';
+                const gCalLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(b.eventType + ' - ' + b.name)}&dates=${calDate}/${calDate}&details=${encodeURIComponent('Booking ID: ' + b.id + ' | Phone: ' + b.phone)}&location=${encodeURIComponent(STUDIO.address)}&add=sdphotography0310@gmail.com`;
+                return `
+                    <tr class="hover:bg-slate-800/30 border-b border-slate-800/40">
+                        <td class="p-3 font-bold text-purple-400">${b.date}</td>
+                        <td class="p-3 font-bold text-white">${b.name}</td>
+                        <td class="p-3 text-slate-300">${b.eventType}</td>
+                        <td class="p-3 text-slate-400">+91 ${b.phone}</td>
+                        <td class="p-3 text-center">
+                            <a href="${gCalLink}" target="_blank" class="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1 shadow">
+                                <i class="fa-solid fa-calendar-check"></i> Mark / View in Calendar
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderExpenseCategoryChart() {
+            const ctx = document.getElementById('expenseCategoryChart');
+            if(!ctx) return;
+
+            let categoryTotals = {};
+            expenses.forEach(e => {
+                categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+            });
+
+            const labels = Object.keys(categoryTotals);
+            const data = Object.values(categoryTotals);
+
+            if(expenseChartInstance) {
+                expenseChartInstance.destroy();
+            }
+
+            expenseChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No Expenses Yet'],
+                    datasets: [{
+                        label: 'Expenses (₹)',
+                        data: data.length > 0 ? data : [0],
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }
+                    }
+                }
+            });
+        }
+
+        function renderAlbumPipeline() {
+            const container = document.getElementById('album-cards-container');
+            if(!container) return;
+            const stages = ["Selection Pending", "Designing", "Client Approval", "Printing & Binding", "Ready for Delivery", "Delivered"];
+
+            container.innerHTML = bookings.map(b => `
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-xs font-bold text-purple-400">${b.id}</span>
+                            <h4 class="text-sm font-bold text-white">${b.name} (${b.eventType})</h4>
+                        </div>
+                        <button onclick="sendWhatsAppAlbumUpdate('${b.id}')" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-1">
+                            <i class="fa-brands fa-whatsapp"></i> Update WA
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-6 gap-1.5">
+                        ${stages.map(st => `
+                            <button onclick="updateAlbumStage('${b.id}', '${st}')" class="p-2 rounded-lg text-[10px] font-bold border ${b.albumStatus === st ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'}">
+                                ${st}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateAlbumStage(id, stage) {
+            const b = bookings.find(x => x.id === id);
+            if (b) {
+                b.albumStatus = stage;
+                saveState();
+                showToast(`Status updated: ${stage}`);
+            }
+        }
+
+        function openEditBookingModal(id) {
+            const b = bookings.find(x => x.id === id);
+            if(!b) return;
+            document.getElementById('edit-bk-id').value = b.id;
+            document.getElementById('edit-bk-total').value = b.total;
+            document.getElementById('edit-bk-advance').value = b.advance;
+            document.getElementById('edit-bk-status').value = b.albumStatus;
+            document.getElementById('edit-booking-modal').classList.remove('hidden');
+        }
+
+        function closeEditBookingModal() {
+            document.getElementById('edit-booking-modal').classList.add('hidden');
+        }
+
+        function saveEditedBooking() {
+            const id = document.getElementById('edit-bk-id').value;
+            const b = bookings.find(x => x.id === id);
+            if(!b) return;
+
+            b.total = parseFloat(document.getElementById('edit-bk-total').value) || 0;
+            b.advance = parseFloat(document.getElementById('edit-bk-advance').value) || 0;
+            b.balance = Math.max(0, b.total - b.advance);
+            b.albumStatus = document.getElementById('edit-bk-status').value;
+
+            saveState();
+            closeEditBookingModal();
+            showToast(`Booking ${id} updated successfully!`);
+        }
+
+        function deleteBooking(id) {
+            if (confirm(`Delete booking ${id}?`)) {
+                bookings = bookings.filter(b => b.id !== id);
+                saveState();
+                showToast("Booking deleted.");
+            }
+        }
+
+        function populateInvoiceClientSelect() {
+            const select = document.getElementById('invoice-client-select');
+            if(!select) return;
+            select.innerHTML = `<option value="">-- Choose Existing Booking --</option>` +
+                bookings.map(b => `<option value="${b.id}">${b.id} - ${b.name}</option>`).join('');
+        }
+
+        function loadBookingIntoInvoice() {
+            const id = document.getElementById('invoice-client-select').value;
+            const b = bookings.find(x => x.id === id);
+            if (!b) return;
+
+            document.getElementById('inv-no').innerText = `#${b.id}`;
+            document.getElementById('inv-date').innerText = new Date().toLocaleDateString('en-IN');
+            document.getElementById('inv-client-name').innerText = b.name;
+            document.getElementById('inv-client-phone').innerText = `+91 ${b.phone}`;
+            document.getElementById('inv-event-type').innerText = b.eventType;
+            document.getElementById('inv-event-date').innerText = b.date;
+
+            document.getElementById('inv-items-body').innerHTML = `
+                <tr class="border-b border-slate-800/40">
+                    <td class="py-3">
+                        <p class="font-bold text-white">${b.eventType} Photography & Video Services</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5">${b.notes || 'Full event coverage and album creation.'}</p>
+                    </td>
+                    <td class="py-3 text-right font-bold text-white">₹${b.total.toLocaleString('en-IN')}</td>
+                </tr>
+            `;
+
+            document.getElementById('inv-total').innerText = `₹${b.total.toLocaleString('en-IN')}`;
+            document.getElementById('inv-advance').innerText = `₹${b.advance.toLocaleString('en-IN')}`;
+            document.getElementById('inv-balance').innerText = `₹${b.balance.toLocaleString('en-IN')}`;
+        }
+
+        function sendWhatsAppBookingConfirm(b) {
+            const trackingUrl = `https://${STUDIO.domain}/?track=${b.id}`;
+            const rawMessage = `Hello ${b.name}!\n\nThank you for choosing SD Studio for your ${b.eventType}!\n\nBooking ID: ${b.id}\nEvent Date: ${b.date}\nTotal Amount: ₹${b.total}\nAdvance Paid: ₹${b.advance}\nBalance Due: ₹${b.balance}\n\nLive Status Tracking Link:\n${trackingUrl}\n\nSD Studio\nChengalpattu | +91 ${STUDIO.phone}`;
+            window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(rawMessage)}`, '_blank');
+        }
+
+        function sendWhatsAppBookingConfirmDirect(id) {
+            const b = bookings.find(x => x.id === id);
+            if (b) sendWhatsAppBookingConfirm(b);
+        }
+
+        function sendWhatsAppAlbumUpdate(id) {
+            const b = bookings.find(x => x.id === id);
+            if (!b) return;
+            const trackingUrl = `https://${STUDIO.domain}/?track=${b.id}`;
+            const rawMessage = `Hi ${b.name}!\n\nYour album status at ${STUDIO.name} is updated!\n\nBooking ID: ${b.id}\nCurrent Stage: ${b.albumStatus}\n\nTrack Progress Online:\n${trackingUrl}\n\nSD Studio`;
+            window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(rawMessage)}`, '_blank');
+        }
+
+        function shareInvoiceWhatsAppDirect() {
+            const id = document.getElementById('invoice-client-select').value;
+            const b = bookings.find(x => x.id === id);
+            if (!b) {
+                alert("Please select a client booking for invoice sharing.");
+                return;
+            }
+
+            const rawMessage = `OFFICIAL INVOICE SUMMARY - ${STUDIO.name.toUpperCase()}\n\nClient Name: ${b.name}\nBill No: #${b.id}\nEvent: ${b.eventType} (${b.date})\n------------------------------\nTotal Package Fee: ₹${b.total}\nAdvance Received: ₹${b.advance}\nBalance Due: ₹${b.balance}\n------------------------------\nGoogle Review & Rating Link:\n${GOOGLE_REVIEW_URL}\n\nStudio Address: ${STUDIO.address}\nWebsite: https://${STUDIO.domain}`;
+            window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(rawMessage)}`, '_blank');
+        }
+
+        function check2DayReminders() {
+            const today = new Date();
+            bookings.forEach(b => {
+                const eventDate = new Date(b.date);
+                const diffTime = eventDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if(diffDays === 2) {
+                    console.log(`2-day reminder due for booking ${b.id}`);
+                }
+            });
+        }
+
+        function trigger2DayWhatsAppReminders() {
+            const today = new Date();
+            let count = 0;
+            bookings.forEach(b => {
+                const eventDate = new Date(b.date);
+                const diffDays = Math.ceil((eventDate - today) / (1000 * 60 * 60 * 24));
+                if(diffDays <= 2 && diffDays >= 0) {
+                    count++;
+                    const msg = `Reminder: Hi ${b.name}, your ${b.eventType} shoot with SD Studio is in ${diffDays} day(s) (${b.date})! Please keep balance ₹${b.balance} ready.`;
+                    window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+                }
+            });
+            showToast(`${count} Reminder alert(s) triggered!`);
+        }
+
+        function sendWhatsAppBroadcast() {
+            const msg = document.getElementById('broadcast-msg').value.trim();
+            if(!msg) {
+                alert("Please enter broadcast message!");
+                return;
+            }
+            bookings.forEach(b => {
+                window.open(`https://wa.me/91${b.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+            });
+            showToast("Broadcast messages initiated for all clients.");
+        }
+
+        function triggerCloudBackup() {
+            const backupData = {
+                studio: STUDIO.name,
+                backupDate: new Date().toISOString(),
+                bookings: bookings,
+                expenses: expenses,
+                dailyExpenses: dailyExpenses,
+                gallery: galleryImages
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `SD_Studio_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Automated Local Data Backup Downloaded Successfully!");
+        }
+
+        function triggerGoogleDriveBackup() {
+            const backupData = {
+                studio: STUDIO.name,
+                account: "sdphotography0310@gmail.com",
+                backupDate: new Date().toISOString(),
+                bookings: bookings,
+                expenses: expenses,
+                dailyExpenses: dailyExpenses,
+                gallery: galleryImages
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `SD_Studio_GoogleDrive_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("Google Drive Cloud Backup downloaded for sdphotography0310@gmail.com!");
+        }
+
+        function lookupClientStatus() {
+            const query = document.getElementById('client-search-input').value.trim().toLowerCase();
+            const res = document.getElementById('client-result-box');
+            if(!res) return;
+            res.classList.remove('hidden');
+
+            const b = bookings.find(x => x.phone.includes(query) || x.id.toLowerCase() === query);
+            if (b) {
+                res.innerHTML = `
+                    <div class="flex justify-between border-b border-slate-800 pb-2">
+                        <span class="font-bold text-purple-400">${b.id}</span>
+                        <span class="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold">${b.albumStatus}</span>
+                    </div>
+                    <p class="font-bold text-white">${b.name} (${b.eventType})</p>
+                    <p class="text-slate-400">Event Date: ${b.date}</p>
+                    <p class="text-amber-400 font-bold">Balance Due: ₹${b.balance.toLocaleString('en-IN')}</p>
+                    <a href="${GOOGLE_REVIEW_URL}" target="_blank" class="block mt-2 text-center py-1.5 bg-amber-500 text-slate-950 font-bold rounded text-[11px]">Leave Google Review & Rating ⭐</a>
+                `;
+            } else {
+                res.innerHTML = `<p class="text-rose-400 font-bold text-center py-2">No Record Found</p>`;
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            if(!toast) return;
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        setInterval(() => {
+            document.querySelectorAll('iframe, a[href*="netlify"], div[class*="netlify"]').forEach(el => {
+                if(el && !el.closest('header') && !el.closest('main')) {
+                    el.remove();
+                }
+            });
+        }, 500);
+    </script>
+</body>
+</html>
